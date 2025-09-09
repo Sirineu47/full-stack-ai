@@ -1,41 +1,31 @@
-import "dotenv/config";
-import consola from "consola";
-import OpenAI from "openai";
-import { getActions } from "./actions";
+import dotenv from 'dotenv';
+dotenv.config();
 
+const apiKey = process.env.DEEPSEEK_API_KEY;
+
+if (!apiKey) {
+  throw new Error("A chave DEEPSEEK_API_KEY não foi encontrada. Verifique o arquivo .env");
+}
+
+console.log("Chave carregada com sucesso:", apiKey);
+
+// Função principal
 export async function generateCode(prompt: string) {
-  if (!process.env.OPENAI_API_KEY) {
-    consola.error("Please set OPENAI_API_KEY as an environment variable.");
-    return;
-  }
+  console.log("Executando generateCode com o prompt:", prompt);
 
-  consola.log("Generating code with AI...");
+  // Exemplo de chamada à API DeepSeek
+  const response = await fetch("https://api.deepseek.com/v1/endpoint", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ prompt }),
+  });
 
-  const openai = new OpenAI();
+  const data = await response.json();
 
-  const runner = openai.beta.chat.completions
-    .runFunctions({
-      model: "gpt-4-1106-preview",
-      messages: [
-        {
-          role: "system",
-          content: `You are an AI that builds full-stack apps for users.
-You are able to call functions to build the app.
-Build what you can with the functions.
-After you've done your work scafolding the app as much as you can, the user will take over and complete the work.`,
-        },
-        { role: "user", content: prompt },
-      ],
-      functions: Object.values(getActions()),
-      temperature: 0,
-      frequency_penalty: 0,
-    })
-    .on("message", (message) => {
-      consola.log("> message", message);
-    });
+  console.log("> Resposta da API:", data);
 
-  const finalContent = await runner.finalContent();
-
-  consola.log("> finalContent", finalContent);
-  consola.log("Done");
+  return data;
 }
